@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>uni Gro - Home</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <style>
+        .menu-card { transition: transform 0.2s; cursor: pointer; text-decoration: none; color: inherit; border-radius: 15px; }
+        .menu-card:hover { transform: translateY(-5px); box-shadow: 0 8px 15px rgba(0,0,0,0.1); }
+        .icon-box { font-size: 2.5rem; margin-bottom: 10px; }
+        /* Style for the logout button container */
+        .logout-container { position: absolute; top: 20px; right: 20px; }
+    </style>
+</head>
+<body class="bg-light">
+    <div class="logout-container">
+        <a href="/logout" class="btn btn-outline-danger btn-sm fw-bold shadow-sm">Logout 🚪</a>
+    </div>
+
+    <div class="container py-5">
+        <h2 class="text-center mb-5 fw-bold text-primary">uni Gro Management</h2>
+        
+        <div class="row g-4 justify-content-center">
+            <div class="col-6 col-sm-6 col-md-4 col-lg-3">
+                <a href="/return_cheque" class="card h-100 menu-card border-0 shadow-sm text-center">
+                    <div class="card-body p-4">
+                        <div class="icon-box">📑</div>
+                        <h6 class="fw-bold">Return Cheques</h6>
+                        <p class="small text-muted mb-0">Record returns</p>
+                    </div>
+                </a>
+            </div>
+
+            <div class="col-6 col-sm-6 col-md-4 col-lg-3">
+                <a href="/payment_entry" class="card h-100 menu-card border-0 shadow-sm text-center">
+                    <div class="card-body p-4">
+                        <div class="icon-box text-success">💸</div>
+                        <h6 class="fw-bold">Payment Entry</h6>
+                        <p class="small text-muted mb-0">Settle returns</p>
+                    </div>
+                </a>
+            </div>
+
+            <div class="col-6 col-sm-6 col-md-4 col-lg-3">
+                <a href="/reports" class="card h-100 menu-card border-0 shadow-sm text-center">
+                    <div class="card-body p-4">
+                        <div class="icon-box">📊</div>
+                        <h6 class="fw-bold">Reports</h6>
+                        <p class="small text-muted mb-0">View data</p>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

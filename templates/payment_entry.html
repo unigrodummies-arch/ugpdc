@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>uni Gro - Payment Entry</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+</head>
+<body class="bg-light">
+    <div class="container py-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h4 class="fw-bold text-success">Payment Entry (Settlement)</h4>
+            <a href="/" class="btn btn-sm btn-outline-secondary">🏠 Home</a>
+        </div>
+
+        <div class="card border-0 shadow-sm mx-auto" style="max-width: 500px;">
+            <div class="card-body">
+                <div class="mb-3">
+                    <label class="form-label small fw-bold">Type to Search & Select Cheque</label>
+                    <input list="cheque_list" id="cheque_search_input" class="form-control" 
+                           placeholder="Start typing Cheque No or Name..." oninput="onChequeSelect()">
+                    <datalist id="cheque_list"></datalist>
+                    <input type="hidden" id="selected_cheque_id">
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label small fw-bold">Outstanding Balance</label>
+                    <input type="text" id="outstanding_bal" class="form-control bg-warning-subtle fw-bold" readonly placeholder="0.00">
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label small fw-bold text-primary">Payment Amount Now</label>
+                    <input type="number" id="pay_now" class="form-control border-primary" placeholder="0.00">
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label small fw-bold">Payment Method</label>
+                    <select class="form-select" id="pay_method">
+                        <option>Cash</option>
+                        <option>New Cheque</option>
+                        <option>Bank Transfer</option>
+                    </select>
+                </div>
+
+                <button class="btn btn-success w-100 fw-bold" onclick="submitSettlement()">Mark as Settled</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    let pendingData = [];
+
+    // Load data from the backend route we added to app.py
+    function loadPending() {
+        fetch('/get_pending_cheques')
+        .then(res => res.json())
+        .then(data => {
+            if(data.success) {
+                pendingData = data.pending;
+                let list = document.getElementById('cheque_list');
+                list.innerHTML = '';
+                
+                // Populate the datalist for searching
+                data.pending.forEach(item => {
+                    let option = document.createElement('option');
+                    // This is what the user sees and searches
+                    option.value = `${item.cheque_no} - ${item.customer}`;
+                    list.appendChild(option);
+                });
+            }
+        });
+    }
+
+    // Handles selecting an item from the searchable list
+    function onChequeSelect() {
+        let inputVal = document.getElementById('cheque_search_input').value;
+        // Find the matching object in our local data
+        let selected = pendingData.find(item => `${item.cheque_no} - ${item.customer}` === inputVal);
+        
+        if (selected) {
+            // Set the hidden ID and show the balance
+            document.getElementById('selected_cheque_id').value = selected.id;
+            document.getElementById('outstanding_bal').value = selected.balance_amount.toLocaleString(undefined, {minimumFractionDigits: 2});
+        } else {
+            // Reset if input doesn't match a valid cheque
+            document.getElementById('selected_cheque_id').value = "";
+            document.getElementById('outstanding_bal').value = "0.00";
+        }
+    }
+
+    function submitSettlement() {
+        let id = document.getElementById('selected_cheque_id').value;
+        let payAmt = document.getElementById('pay_now').value;
+        
+        if(!id || !payAmt || payAmt <= 0) return alert("Please select a valid cheque and enter a payment amount");
+
+        fetch('/settle_cheque', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ id: id, pay_amount: payAmt })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if(data.success) {
+                alert("Payment recorded successfully! New Balance: " + data.new_balance.toLocaleString());
+                location.reload();
+            } else {
+                alert(data.message);
+            }
+        });
+    }
+
+    window.onload = loadPending;
+    </script>
+</body>
+</html>

@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>uni Gro - Return Cheque Manager</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <style>
+        .table-responsive { border-radius: 8px; overflow: hidden; }
+        .badge-pending { background-color: #ffc107; color: #000; }
+        .badge-settled { background-color: #198754; color: #fff; }
+    </style>
+</head>
+<body class="bg-light">
+    <div class="container py-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h4 class="mb-0 fw-bold text-primary">Return Cheque Manager</h4>
+            <a href="/" class="btn btn-sm btn-outline-secondary">🏠 Home</a>
+        </div>
+
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body">
+                <label class="form-label small fw-bold">Search Odoo PDC</label>
+                <div class="input-group">
+                    <input type="text" id="cheque_input" class="form-control" placeholder="Enter Cheque No">
+                    <button class="btn btn-primary" onclick="searchCheque()">Recall</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="table-responsive card border-0 shadow-sm mb-5">
+            <table class="table mb-0 align-middle">
+                <thead class="table-dark small">
+                    <tr>
+                        <th>Cheque No</th>
+                        <th>Chq Date</th>
+                        <th>Customer</th>
+                        <th>Amount</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="result_grid" class="small"></tbody>
+            </table>
+        </div>
+
+        <div class="row mb-3 align-items-center">
+            <div class="col-md-6">
+                <h5 class="fw-bold mb-0">Saved Returns</h5>
+            </div>
+            <div class="col-md-6 mt-2 mt-md-0">
+                <input type="text" id="history_search" class="form-control form-control-sm" placeholder="Filter by No, Name, or Amount..." onkeyup="filterHistory()">
+            </div>
+        </div>
+
+        <div class="table-responsive card border-0 shadow-sm">
+            <table class="table table-striped mb-0 align-middle">
+                <thead class="table-secondary small">
+                    <tr>
+                        <th>Cheque No</th>
+                        <th>Chq Date</th>
+                        <th>Customer</th>
+                        <th>Amount</th>
+                        <th>Status</th>
+                        <th>Saved On</th>
+                    </tr>
+                </thead>
+                <tbody id="history_body" class="small"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+    let fullHistory = [];
+
+    function searchCheque() {
+    let chq = document.getElementById('cheque_input').value;
+    if(!chq) return alert("Please enter a cheque number");
+
+    fetch('/search_odoo', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({cheque_no: chq})
+    })
+    .then(res => res.json())
+    .then(data => {
+        if(data.success) {
+            // Displays the aggregated (summed) data as one row
+            document.getElementById('result_grid').innerHTML = `
+                <tr>
+                    <td>${data.cheque_no}</td>
+                    <td>${data.cheque_date}</td> 
+                    <td class="text-truncate" style="max-width: 150px;">${data.customer}</td>
+                    <td class="fw-bold">${data.amount.toLocaleString()}</td>
+                    <td><button class="btn btn-sm btn-danger" onclick="saveToLocal('${data.cheque_no}', '${data.cheque_date}', '${data.customer}', ${data.amount}, '${data.bank}')">Save Return</button></td>
+                </tr>`;
+        } else {
+            alert(data.message);
+        }
+    });
+}
+
+    function loadHistory() {
+        fetch('/get_history')
+        .then(res => res.json())
+        .then(data => {
+            if(data.success) {
+                fullHistory = data.history;
+                renderHistory(fullHistory);
+            }
+        });
+    }
+
+    function renderHistory(items) {
+        let html = '';
+        items.forEach(item => {
+            let statusBadge = item.status === 'Pending' ? 'badge-pending' : 'badge-settled';
+            html += `
+                <tr>
+                    <td>${item.cheque_no}</td>
+                    <td>${item.cheque_date}</td>
+                    <td class="text-truncate" style="max-width: 120px;">${item.customer}</td>
+                    <td>${item.amount.toLocaleString()}</td>
+                    <td><span class="badge ${statusBadge}">${item.status}</span></td>
+                    <td class="text-muted smaller" style="font-size: 0.75rem;">${item.date_saved}</td>
+                </tr>`;
+        });
+        document.getElementById('history_body').innerHTML = html;
+    }
+
+    function filterHistory() {
+        let query = document.getElementById('history_search').value.toLowerCase();
+        let filtered = fullHistory.filter(i => 
+            i.cheque_no.toLowerCase().includes(query) || 
+            i.customer.toLowerCase().includes(query) || 
+            i.amount.toString().includes(query)
+        );
+        renderHistory(filtered);
+    }
+
+    function saveToLocal(no, date, cust, amt, bank) {
+        fetch('/save_returned', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({cheque_no: no, cheque_date: date, customer: cust, amount: amt, bank: bank})
+        })
+        .then(res => res.json())
+        .then(data => {
+            if(data.success) {
+                alert("Success: Recorded as Pending!");
+                document.getElementById('result_grid').innerHTML = ""; 
+                loadHistory();
+            } else {
+                alert(data.message);
+            }
+        });
+    }
+
+    window.onload = loadHistory;
+    </script>
+</body>
+</html>
